@@ -1,10 +1,12 @@
 package com.example.administrator.xmlweather10;
 
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Xml;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,6 +21,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import android.widget.LinearLayout.LayoutParams;
 
 public class XmlWeatherActivity extends AppCompatActivity{
     HttpURLConnection httpURLConnection = null;
@@ -51,7 +54,7 @@ public class XmlWeatherActivity extends AppCompatActivity{
         public void handleMessage(Message msg){
             switch (msg.what){
                 case 1:
-                    showData();
+                    show();
                     break;
             }
             super.handleMessage(msg);
@@ -81,6 +84,7 @@ public class XmlWeatherActivity extends AppCompatActivity{
                 M m = null;
                 int eveType = xmlPullParser.getEventType();
                 while(eveType != XmlPullParser.END_DOCUMENT){
+                    //开始节点
                     if(eveType == XmlPullParser.START_TAG){
                         String tag = xmlPullParser.getName();
                         if(tag.equalsIgnoreCase("weather")){
@@ -92,7 +96,7 @@ public class XmlWeatherActivity extends AppCompatActivity{
                                 pw.date = xmlPullParser.nextText();
                             }
                         }
-                        //下一个节点
+                        //下一个节点，以此类推
                         if(tag.equalsIgnoreCase("high")){
                             if(pw != null){
                                 pw.high = xmlPullParser.nextText();
@@ -125,25 +129,59 @@ public class XmlWeatherActivity extends AppCompatActivity{
                             }
                         }
                     }
+                    //后节点
                     else if(eveType == XmlPullParser.END_TAG){
                         String tag = xmlPullParser.getName();
                         if (tag.equalsIgnoreCase("weather")){
                             weatherInfs.add(pw);
                             pw = null;
                         }
-                        if(tag.equalsIgnoreCase("date")){
+//                        if(tag.equalsIgnoreCase("date")){
+//                            pw.day = m;
+//                            m = null;
+//                        }
+                        if(tag.equalsIgnoreCase("day")){
                             pw.day = m;
-
+                            m = null;
+                        }
+                        if(tag.equalsIgnoreCase("night")){
+                            pw.night = m;
+                            m = null;
                         }
                     }
+                    eveType = xmlPullParser.next();
                 }
+                //信使传值
+                Message message = new Message();
+                message.what = 1;
+                handler.sendMessage(message);
             }catch(Exception e){
                 e.printStackTrace();
             }
         }
     }
-    public void showData(){
+    public void show(){
         //显示
+        mShowTV.removeAllViews();
+        LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT);
+        for(int i = 0; i<weatherInfs.size();i++){
+            //日期
+            TextView dateView = new TextView(this);
+            dateView.setGravity(Gravity.CENTER_HORIZONTAL);
+            dateView.setLayoutParams(params);
+            dateView.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+            dateView.setText("日期："+weatherInfs.get(i).date);
+            mShowTV.addView(dateView);
+            //白天和夜间
+            TextView mView = new TextView(this);
+            mView.setLayoutParams(params);
+            String str = "高温：" + weatherInfs.get(i).high+",低温：" + weatherInfs.get(i).low + "\n";
+            str = str + "白天：" + weatherInfs.get(i).day.inf() + "\n";
+            str = str + "夜间：" +weatherInfs.get(i).night.inf();
+            mView.setText(str);
+            mShowTV.addView(mView);
+        }
+
     }
 
 }

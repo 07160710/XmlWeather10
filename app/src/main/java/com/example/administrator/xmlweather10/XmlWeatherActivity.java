@@ -71,6 +71,10 @@ public class XmlWeatherActivity extends AppCompatActivity{
 
         @Override
         public void run() {
+            //每次查询清除掉视图显示的东西
+            for(int i = 0; i<weatherInfs.size();i++){
+                weatherInfs.clear();
+            }
             InputStream din = null;
             try{
                 URL url = new URL(urlstr);

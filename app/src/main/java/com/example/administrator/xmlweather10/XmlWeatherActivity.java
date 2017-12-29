@@ -1,43 +1,81 @@
 package com.example.administrator.xmlweather10;
 
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Xml;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.List;
+
 import android.widget.LinearLayout.LayoutParams;
 
 public class XmlWeatherActivity extends AppCompatActivity{
     HttpURLConnection httpURLConnection = null;
     ArrayList<WeatherInf> weatherInfs = new ArrayList<>();
     String cityname = "广州";
-    private EditText mCityname;
+    private AutoCompleteTextView  mCityname;
     private Button mFind;
     private LinearLayout mShowTV;
+    //PHP接口地址
+    private String weburl = "http://10.0.2.2/phptest/area_api.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_xml_weather);
         setTitle("天气查询XML");
-        mCityname = (EditText) findViewById(R.id.cityname);
+        GetArea getArea = new GetArea();
+        getArea.start();
+
         mFind = (Button) findViewById(R.id.search);
         mShowTV = (LinearLayout) findViewById(R.id.show_weather);
+        //
+
+        mCityname = (AutoCompleteTextView) findViewById(R.id.cityname);
+//        mCityname.setThreshold(1);
+//        mCityname.addTextChangedListener(new TextWatcher() {
+//            @Override
+//            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+//
+//            }
+//
+//            @Override
+//            public void onTextChanged(CharSequence s, int start, int before, int count) {
+//                String str = s.toString();
+//                GetArea getArea = new GetArea(str);
+//                getArea.start();
+//            }
+//
+//            @Override
+//            public void afterTextChanged(Editable s) {
+//
+//            }
+//        });
+
         mFind.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -55,10 +93,73 @@ public class XmlWeatherActivity extends AppCompatActivity{
                 case 1:
                     show();
                     break;
+                case 2:
+                    ArrayAdapter adapter = (ArrayAdapter)msg.obj;
+                    mCityname.setAdapter(adapter);
+                    mCityname.setThreshold(1);
+
             }
             super.handleMessage(msg);
         }
     };
+    class GetArea extends Thread{
+        private String area="";
+        public GetArea(){
+            try {
+                this.area = URLEncoder.encode(area,"UTF-8");
+            }catch (Exception ee){
+
+            }
+        }
+        @Override
+        public void run() {
+            try {
+                URL url = new URL(weburl);
+                HttpURLConnection httpURLConnection = (HttpURLConnection)url.openConnection();
+                httpURLConnection.setRequestMethod("GET");
+                httpURLConnection.setConnectTimeout(5000);
+                int code = httpURLConnection.getResponseCode();
+                if(code==200){
+                    InputStream in = httpURLConnection.getInputStream();
+                    InputStreamReader din = new InputStreamReader(in);
+                    BufferedReader bdin = new BufferedReader(din);
+                    StringBuffer sbf = new StringBuffer();
+                    String line = null;
+
+                    while((line=bdin.readLine())!=null){
+                        sbf.append(line);
+                    }
+
+                    String jsonData =new String(sbf.toString().getBytes(),"UTF-8") ; //此句非常重要！把字符串转为utf8编码，因为String 默认是unicode编码的。
+                    JSONArray jsonArray = new JSONArray(jsonData);
+                    List<String> list = new ArrayList<String>();
+                    for(int i=0;i<jsonArray.length();i++){
+                        String pro = jsonArray.opt(i).toString();
+                        list.add(pro);
+                    }
+                    ArrayAdapter<String> adapter = new ArrayAdapter<String>(XmlWeatherActivity.this,android.R.layout.simple_spinner_dropdown_item,list);
+                    Message msg = new Message();
+                    msg.obj = adapter;
+                    msg.what = 2;
+                    handler.sendMessage(msg);
+
+                    //adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    // mCityname.setAdapter(adapter);
+                    // sp_province.setAdapter(adapter);//线程不能访问主线程activity的控件
+                }else{
+                    Looper.prepare();
+                    Toast.makeText(XmlWeatherActivity.this,"网址不可访问",Toast.LENGTH_SHORT).show();
+                    Looper.loop();
+                }
+            }catch (Exception ee){
+                Looper.prepare();
+                Toast.makeText(XmlWeatherActivity.this,"网络异常",Toast.LENGTH_SHORT).show();
+                Looper.loop();
+            }
+        }
+    }
+
+
     class GetXml extends Thread{
         private String urlstr =  "http://wthrcdn.etouch.cn/WeatherApi?city=";
         public GetXml(String cityname){

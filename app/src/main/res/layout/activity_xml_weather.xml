@@ -15,17 +15,24 @@
             android:text="城市"
             android:layout_marginLeft="5dp"
             android:layout_marginRight="2dp"/>
-        <EditText
+        <!--<EditText
             android:id="@+id/cityname"
             android:layout_width="185dp"
             android:inputType="text"
             android:layout_height="wrap_content"
-            android:text="广州"/>
+            android:text="广州" />-->
+        <AutoCompleteTextView
+            android:id="@+id/cityname"
+            android:layout_width="185dp"
+            android:layout_height="wrap_content"
+            android:text="广州"
+            android:dropDownHeight="300dp"
+            android:dropDownWidth="185dp"/>
         <Button
             android:id="@+id/search"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="查询"/>
+            android:text="查询" />
     </LinearLayout>
     <LinearLayout
         android:id="@+id/show_weather"
